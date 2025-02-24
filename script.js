@@ -1,4 +1,4 @@
-const GOOGLE_CLOUD_API_KEY = "a0953d4273e6f0031f29eba1d9789851f8497c5c"; // Replace with your key
+const GOOGLE_CLOUD_API_KEY = "AIzaSyDsoo18UyvdkdnNmlrFFMLACIX5BcWVerA"; // Replace with your key
 const OPENAI_API_KEY = "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"; // Replace with your key
 
 document.getElementById("start").addEventListener("click", startRecording);
