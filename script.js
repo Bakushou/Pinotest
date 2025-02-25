@@ -47,21 +47,21 @@ async function processRecording() {
 async function convertSpeechToText(audioBlob) {
     const base64Audio = await blobToBase64(audioBlob);
 
-    const response = await fetch(
-        `https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_CLOUD_API_KEY}`,
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                config: { 
-                    encoding: "LINEAR16", 
-                    sampleRateHertz: 16000, 
-                    languageCode: "en-US" 
-                },
-                audio: { content: base64Audio },
-            }),
-        }
-    );
+const response = await fetch(
+    `https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_CLOUD_API_KEY}`,
+    {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            config: { 
+                encoding: "WEBM_OPUS", 
+                sampleRateHertz: 48000,  // 🔥 Fix here!
+                languageCode: "en-US" 
+            },
+            audio: { content: base64Audio },
+        }),
+    }
+);
 
     const data = await response.json();
     console.log("Google API Response:", JSON.stringify(data, null, 2));
