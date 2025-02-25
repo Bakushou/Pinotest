@@ -64,7 +64,7 @@ async function convertSpeechToText(audioBlob) {
     );
 
     const data = await response.json();
-    console.log("Google API Response:", data);
+    console.log("Google API Response:", JSON.stringify(data, null, 2));
 
     return data.results?.[0]?.alternatives?.[0]?.transcript || "";
 }
