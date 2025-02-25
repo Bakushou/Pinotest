@@ -2,7 +2,8 @@ const GOOGLE_CLOUD_API_KEY = "AIzaSyDsoo18UyvdkdnNmlrFFMLACIX5BcWVerA";
 const OPENAI_API_KEY = "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"; 
 
 // Get references to the HTML elements (assuming you have a button and output area)
-const startButton = document.getElementById("startListening");
+console.log("Button:", startButton);
+const startButton = document.getElementById("start");
 const outputDiv = document.getElementById("output");
 
 let mediaRecorder;
