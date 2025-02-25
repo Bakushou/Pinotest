@@ -1,5 +1,6 @@
 const GOOGLE_CLOUD_API_KEY = "AIzaSyDsoo18UyvdkdnNmlrFFMLACIX5BcWVerA"; 
-const OPENAI_API_KEY = "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"; 
+require('dotenv').config();
+const apiKey = process.env.OPENAI_API_KEY;
 
 // Get references to the HTML elements (assuming you have a button and output area)
 const startButton = document.getElementById("start");
