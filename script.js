@@ -1,94 +1,117 @@
-const GOOGLE_CLOUD_API_KEY = "AIzaSyDsoo18UyvdkdnNmlrFFMLACIX5BcWVerA"; // Replace with your key
-const OPENAI_API_KEY = "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"; // Replace with your key
+const GOOGLE_CLOUD_API_KEY = "your-google-cloud-api-key"; 
+const OPENAI_API_KEY = "your-openai-api-key"; 
 
-document.getElementById("start").addEventListener("click", startRecording);
+// Get references to the HTML elements (assuming you have a button and output area)
+const startButton = document.getElementById("startListening");
+const outputDiv = document.getElementById("output");
 
+let mediaRecorder;
+let audioChunks = [];
+
+// 🎤 Start Recording Function
 async function startRecording() {
-  document.getElementById("output").textContent = "Listening...";
-  
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  const mediaRecorder = new MediaRecorder(stream);
-  let audioChunks = [];
+    outputDiv.innerText = "Listening... 🎤";
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+        mediaRecorder.onstop = processRecording;
 
-  mediaRecorder.ondataavailable = (event) => {
-    audioChunks.push(event.data);
-  };
+        audioChunks = [];
+        mediaRecorder.start();
 
-  mediaRecorder.onstop = async () => {
+        setTimeout(() => mediaRecorder.stop(), 5000); // Stops recording after 5 seconds
+    } catch (error) {
+        console.error("Microphone access error:", error);
+        outputDiv.innerText = "Error accessing microphone!";
+    }
+}
+
+// 🔊 Process Recorded Audio
+async function processRecording() {
     const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
     const transcript = await convertSpeechToText(audioBlob);
-    document.getElementById("output").textContent = `You said: "${transcript}"`;
-
-    if (transcript) {
-      const correction = await checkWithAI(transcript);
-      if (correction) {
-        document.getElementById("output").textContent = `Correction: ${correction}`;
-        speakText(correction);
-      } else {
-        document.getElementById("output").textContent = "No mistakes detected.";
-      }
+    
+    if (!transcript) {
+        outputDiv.innerText = "Couldn't recognize speech. Try again!";
+        return;
     }
-  };
 
-  mediaRecorder.start();
-  setTimeout(() => mediaRecorder.stop(), 5000); // Stop recording after 5 seconds
+    outputDiv.innerText = `You said: "${transcript}"`;
+    checkForMistakes(transcript);
 }
 
-// Convert Speech to Text using Google Cloud API
+// 📝 Convert Speech to Text (Google API)
 async function convertSpeechToText(audioBlob) {
-  const base64Audio = await blobToBase64(audioBlob);
+    const base64Audio = await blobToBase64(audioBlob);
 
-  const response = await fetch(
-    `https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_CLOUD_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        config: { encoding: "LINEAR16", sampleRateHertz: 16000, languageCode: "en-US" },
-        audio: { content: base64Audio },
-      }),
+    const response = await fetch(
+        `https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_CLOUD_API_KEY}`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                config: { 
+                    encoding: "LINEAR16", 
+                    sampleRateHertz: 16000, 
+                    languageCode: "en-US" 
+                },
+                audio: { content: base64Audio },
+            }),
+        }
+    );
+
+    const data = await response.json();
+    console.log("Google API Response:", data);
+
+    return data.results?.[0]?.alternatives?.[0]?.transcript || "";
+}
+
+// 🤖 Check for Mistakes (OpenAI API)
+async function checkForMistakes(transcript) {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+            model: "gpt-4-turbo",
+            messages: [
+                { role: "system", content: "You are an AI that listens to discussions and only responds if a mistake is made. Correct any incorrect statements." },
+                { role: "user", content: transcript }
+            ],
+            temperature: 0.5
+        })
+    });
+
+    const data = await response.json();
+    console.log("OpenAI Response:", data);
+
+    const correction = data.choices?.[0]?.message?.content?.trim();
+    if (correction && correction !== transcript) {
+        outputDiv.innerText += `\nCorrection: "${correction}"`;
+        speakCorrection(correction);
     }
-  );
-
-  const data = await response.json();
-  return data.results?.[0]?.alternatives?.[0]?.transcript || "";
 }
 
-// Convert Blob to Base64
-async function blobToBase64(blob) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onloadend = () => {
-      resolve(reader.result.split(",")[1]); // Extract Base64 content
-    };
-  });
+// 🔊 Convert Text to Speech (Speak the Correction)
+function speakCorrection(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    speechSynthesis.speak(utterance);
 }
 
-// Fact-Check with OpenAI
-async function checkWithAI(statement) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4",
-      messages: [
-        { role: "system", content: "You are a fact-checking assistant. Only correct false statements. If a statement is true, do nothing." },
-        { role: "user", content: statement },
-      ],
-    }),
-  });
-
-  const data = await response.json();
-  const correction = data.choices?.[0]?.message?.content?.trim();
-  return correction && correction.toLowerCase() !== "true" ? correction : "";
+// 📄 Convert Blob to Base64
+function blobToBase64(blob) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(",")[1]);
+        reader.readAsDataURL(blob);
+    });
 }
 
-// Speak Correction
-function speakText(text) {
-  const utterance = new SpeechSynthesisUtterance(text);
-  speechSynthesis.speak(utterance);
-}
+// 🎤 Add Click Event to Start Button
+startButton.addEventListener("click", startRecording);
