@@ -1,5 +1,5 @@
 const GOOGLE_CLOUD_API_KEY = "AIzaSyDsoo18UyvdkdnNmlrFFMLACIX5BcWVerA"; 
-const OPENAI_API_KEY = "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"; 
+const OPENAI_API_KEY = "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"; 
 
 // Get references to the HTML elements (assuming you have a button and output area)
 const startButton = document.getElementById("start");
